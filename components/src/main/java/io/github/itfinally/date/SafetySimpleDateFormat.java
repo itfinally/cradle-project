@@ -55,8 +55,6 @@ public class SafetySimpleDateFormat {
     }
   }
 
-
-
   @SuppressWarnings( "all" )
   public String format( Date date ) {
     SimpleDateFormat formatter = getSimpleDateFormat();
