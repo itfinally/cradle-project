@@ -2,6 +2,8 @@ package io.github.itfinally.date;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import io.github.itfinally.exception.ExecutionRuntimeException;
+import io.github.itfinally.exception.ParseRuntimeException;
 
 import java.text.*;
 import java.util.ArrayList;
@@ -25,7 +27,7 @@ public class SafetySimpleDateFormat {
     this.format = format;
   }
 
-  private SimpleDateFormat getSimpleDateFormat() {
+  private SimpleDateFormat getSimpleDateFormat() throws ExecutionRuntimeException {
     try {
       List<SimpleDateFormat> formats = datetimeFormats.get( format, new Callable<List<SimpleDateFormat>>() {
         @Override
@@ -37,12 +39,12 @@ public class SafetySimpleDateFormat {
       return formats.get( abs( currentThread().getName().hashCode() % formats.size() ) );
 
     } catch ( ExecutionException e ) {
-      throw new RuntimeException( e );
+      throw new ExecutionRuntimeException( e );
     }
   }
 
   @SuppressWarnings( "all" )
-  public Date parse( String source ) {
+  public Date parse( String source ) throws ParseRuntimeException {
     SimpleDateFormat formatter = getSimpleDateFormat();
 
     synchronized ( formatter ) {
@@ -50,7 +52,7 @@ public class SafetySimpleDateFormat {
         return formatter.parse( source );
 
       } catch ( ParseException e ) {
-        throw new RuntimeException( e );
+        throw new ParseRuntimeException( e );
       }
     }
   }

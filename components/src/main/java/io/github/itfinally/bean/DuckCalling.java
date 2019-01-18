@@ -1,5 +1,6 @@
 package io.github.itfinally.bean;
 
+import io.github.itfinally.exception.MethodInvokeRuntimeException;
 import io.github.itfinally.exception.MultiMatchMethodRuntimeException;
 import io.github.itfinally.exception.NoSuchMethodRuntimeException;
 
@@ -12,15 +13,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 // Duck model in Java
-public class DuckCalling {
+public final class DuckCalling {
   private static final ConcurrentMap<String, List<Method>> methodMappings = new ConcurrentHashMap<>( 32 );
   private static final ConcurrentMap<Class<?>, List<Method>> classMethods = new ConcurrentHashMap<>( 32 );
 
   private DuckCalling() {
   }
 
-  @SuppressWarnings( "unchecked" )
-  public static <T> T invoke( Object applier, String name, Object... args ) {
+  public static <T> T invoke( Object applier, String name, Object... args )
+      throws NoSuchMethodRuntimeException, MethodInvokeRuntimeException {
+
     Class<?> clazz = applier.getClass();
     String alias = buildAlias( clazz, name, args.length );
 
@@ -118,7 +120,7 @@ public class DuckCalling {
       return null == method ? null : ( T ) method.invoke( applier, args );
 
     } catch ( IllegalAccessException | InvocationTargetException e ) {
-      throw new RuntimeException( e );
+      throw new MethodInvokeRuntimeException( e );
     }
   }
 }

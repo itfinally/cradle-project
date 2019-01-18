@@ -17,6 +17,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.View;
 
@@ -255,7 +256,8 @@ public class HttpVerifierCollector implements ApplicationListener<ContextRefresh
 
   private static boolean isSpringMvcApi( Class<?> type ) {
     return Model.class.isAssignableFrom( type ) || ModelAndView.class.isAssignableFrom( type )
-        || ModelMap.class.isAssignableFrom( type ) || View.class.isAssignableFrom( type );
+        || ModelMap.class.isAssignableFrom( type ) || View.class.isAssignableFrom( type )
+        || MultipartFile.class.isAssignableFrom( type );
   }
 
   private static boolean isRequestBody( Annotation[][] annotations, int index ) {

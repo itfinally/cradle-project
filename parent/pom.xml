@@ -49,22 +49,21 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>1.7</maven.compiler.source>
-    <maven.compiler.target>1.7</maven.compiler.target>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <java.version>1.8</java.version>
 
     <gpg.version>1.6</gpg.version>
     <source.version>3.0.1</source.version>
     <javadoc.version>3.0.1</javadoc.version>
     <guava.version>27.0-android</guava.version>
 
-    <!-- provide -->
-    <disruptor.version>3.3.4</disruptor.version>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-web</artifactId>
+      <artifactId>spring-boot-starter</artifactId>
     </dependency>
 
     <dependency>
@@ -77,20 +76,6 @@
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <version>${guava.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-log4j2</artifactId>
-      <scope>provided</scope>
-      <optional>true</optional>
-    </dependency>
-
-    <dependency>
-      <groupId>com.lmax</groupId>
-      <artifactId>disruptor</artifactId>
-      <version>${disruptor.version}</version>
-      <scope>provided</scope>
       <optional>true</optional>
     </dependency>
   </dependencies>

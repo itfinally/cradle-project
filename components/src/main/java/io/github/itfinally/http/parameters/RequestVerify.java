@@ -7,9 +7,9 @@ import java.lang.annotation.*;
 @Retention( RetentionPolicy.RUNTIME )
 public @interface RequestVerify {
 
-    // Provide verifier
-    Class<? extends HttpArgumentsVerifier> value() default HttpArgumentsVerifier.class;
+  // Provide verifier
+  Class<? extends HttpArgumentsVerifier> value() default HttpArgumentsVerifier.class;
 
-    // Verify by specify method of verifier
-    String method() default "";
+  // Verify by specify method of verifier
+  String method() default "";
 }

@@ -1,5 +1,7 @@
 package io.github.itfinally.bean;
 
+import io.github.itfinally.exception.IntrospectionRuntimeException;
+import io.github.itfinally.exception.NoSuchFieldRuntimeException;
 import org.springframework.beans.BeanInfoFactory;
 import org.springframework.beans.ExtendedBeanInfoFactory;
 
@@ -13,14 +15,16 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class BeanInfoExplorer {
+public final class BeanInfoExplorer {
   private static final BeanInfoFactory beanInfoFactory = new ExtendedBeanInfoFactory();
   private static final ConcurrentMap<Class<?>, Map<String, BeanInfo>> beanInfoCache = new ConcurrentHashMap<>();
 
   private BeanInfoExplorer() {
   }
 
-  public static Map<String, BeanInfo> getPropertiesInfo( Class<?> beanClass ) {
+  public static Map<String, BeanInfo> getPropertiesInfo( Class<?> beanClass )
+      throws NoSuchFieldRuntimeException, IntrospectionRuntimeException {
+
     if ( beanInfoCache.containsKey( Objects.<Class<?>>requireNonNull( beanClass, "Bean class require not null" ) ) ) {
       return beanInfoCache.get( beanClass );
     }
@@ -40,8 +44,8 @@ public class BeanInfoExplorer {
             descriptor.getReadMethod(), descriptor.getName() );
 
         if ( null == property ) {
-          throw new RuntimeException( new NoSuchFieldException( String.format( "Property '%s' of class '%s' is not found.",
-              descriptor.getName(), descriptor.getReadMethod().getDeclaringClass().getName() ) ) );
+          throw new NoSuchFieldRuntimeException( String.format( "Property '%s' of class '%s' is not found.",
+              descriptor.getName(), descriptor.getReadMethod().getDeclaringClass().getName() ) );
         }
 
         propertiesInfo.put( property.getName(), new BeanInfo( property, descriptor.getReadMethod(), descriptor.getWriteMethod() ) );
@@ -51,11 +55,11 @@ public class BeanInfoExplorer {
       return propertiesInfo;
 
     } catch ( IntrospectionException e ) {
-      throw new RuntimeException( e );
+      throw new IntrospectionRuntimeException( e );
     }
   }
 
-  public static class BeanInfo {
+  public static final class BeanInfo {
     private final Field property;
     private final Method readMethod;
     private final Method writeMethod;
@@ -93,18 +97,18 @@ public class BeanInfoExplorer {
     } catch ( NoSuchFieldException ignore ) {
     }
 
+    String pettyName = name.replaceFirst( "^\\w", name.substring( 0, 1 ).toUpperCase() );
+
     try {
       if ( boolean.class == readMethod.getReturnType() ) {
-        return clazz.getDeclaredField( String.format( "is%s", name.replaceFirst( "^\\w",
-            name.substring( 0, 1 ).toUpperCase() ) ) );
+        return clazz.getDeclaredField( String.format( "is%s", pettyName ) );
       }
 
     } catch ( NoSuchFieldException ignore ) {
     }
 
     try {
-      return clazz.getDeclaredField( name.replaceFirst( "^\\w",
-          name.substring( 0, 1 ).toUpperCase() ) );
+      return clazz.getDeclaredField( pettyName );
 
     } catch ( NoSuchFieldException ignore ) {
     }

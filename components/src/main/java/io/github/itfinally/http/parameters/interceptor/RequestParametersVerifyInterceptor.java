@@ -1,6 +1,8 @@
 package io.github.itfinally.http.parameters.interceptor;
 
 import com.google.common.collect.Sets;
+import io.github.itfinally.ComponentProperties;
+import io.github.itfinally.exception.MethodInvokeRuntimeException;
 import io.github.itfinally.http.parameters.FailureResponse;
 import io.github.itfinally.http.parameters.HttpVerifierCollector;
 import io.github.itfinally.http.parameters.RequestParametersVerifierConfiguration;
@@ -32,12 +34,20 @@ public class RequestParametersVerifyInterceptor implements Filter {
   @Resource
   private FailureResponse failureResponse;
 
+  @Resource
+  private ComponentProperties componentProperties;
+
   @Override
   public void init( FilterConfig filterConfig ) {
   }
 
   @Override
   public void doFilter( ServletRequest servletRequest, ServletResponse servletResponse, FilterChain chain ) throws IOException, ServletException {
+    if ( !componentProperties.isAllowRequestParameterVerify() ) {
+      chain.doFilter( servletRequest, servletResponse );
+      return;
+    }
+
     HttpServletRequest request = ( HttpServletRequest ) servletRequest;
     HttpServletResponse response = ( HttpServletResponse ) servletResponse;
 
@@ -45,6 +55,7 @@ public class RequestParametersVerifyInterceptor implements Filter {
     String requestUri = request.getRequestURI().toLowerCase();
     String requestMethod = request.getMethod().toLowerCase();
 
+    // Empty method "" which mean accept all request method except "ignore method"
     if ( ignoreMethod.contains( requestMethod )
         || !( methodMetadataMappings.containsKey( "" )
         || methodMetadataMappings.containsKey( requestMethod ) ) ) {
@@ -54,10 +65,14 @@ public class RequestParametersVerifyInterceptor implements Filter {
     }
 
     MethodMetadata metadata = null;
-    if ( methodMetadataMappings.get( "" ).containsKey( requestUri ) ) {
+    if ( methodMetadataMappings.containsKey( "" )
+        && methodMetadataMappings.get( "" ).containsKey( requestUri ) ) {
+
       metadata = methodMetadataMappings.get( "" ).get( requestUri );
 
-    } else if ( methodMetadataMappings.get( requestMethod ).containsKey( requestUri ) ) {
+    } else if ( methodMetadataMappings.containsKey( requestMethod )
+        && methodMetadataMappings.get( requestMethod ).containsKey( requestUri ) ) {
+
       metadata = methodMetadataMappings.get( requestMethod ).get( requestUri );
     }
 
@@ -86,7 +101,7 @@ public class RequestParametersVerifyInterceptor implements Filter {
       }
 
     } catch ( IllegalAccessException | InvocationTargetException e ) {
-      throw new RuntimeException( e );
+      throw new MethodInvokeRuntimeException( e );
     }
 
     if ( !( result instanceof VerifyResultPair ) ) {
@@ -124,11 +139,13 @@ public class RequestParametersVerifyInterceptor implements Filter {
     for ( String field : args.getModifiedFields() ) {
       values = parameters.get( field );
 
+      // Single key
       if ( null == values || values.length <= 1 ) {
         newParameters.put( field, new String[]{ args.get( field ) } );
         continue;
       }
 
+      // Multi key
       newValue = Arrays.copyOf( values, values.length );
       newValue[ 0 ] = args.get( field );
 
