@@ -41,7 +41,7 @@ public class ThreadLocalDelegatedFactory {
       String currentThreadName = currentThread.getName();
 
       if ( !setupThread.containsKey( currentThreadName ) && null == setupThread.putIfAbsent( currentThreadName, placeholder ) ) {
-        currentThread.setUncaughtExceptionHandler( new ThreadExceptionHandler(
+        currentThread.setUncaughtExceptionHandler( new ThreadResourceCleanupHandler(
             currentThread.getUncaughtExceptionHandler() ) );
       }
 
@@ -49,10 +49,10 @@ public class ThreadLocalDelegatedFactory {
     }
   }
 
-  private static final class ThreadExceptionHandler implements Thread.UncaughtExceptionHandler {
+  private static final class ThreadResourceCleanupHandler implements Thread.UncaughtExceptionHandler {
     private final Thread.UncaughtExceptionHandler defaultExceptionHandler;
 
-    private ThreadExceptionHandler( Thread.UncaughtExceptionHandler defaultExceptionHandler ) {
+    private ThreadResourceCleanupHandler( Thread.UncaughtExceptionHandler defaultExceptionHandler ) {
       this.defaultExceptionHandler = defaultExceptionHandler;
     }
 

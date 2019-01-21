@@ -1,5 +1,7 @@
 package io.github.itfinally.vo;
 
+import io.github.itfinally.http.HttpCodeAdapter;
+
 import java.util.Collection;
 import java.util.Objects;
 
@@ -9,16 +11,16 @@ public class ListResponseVo<T> extends BasicPagingVo<ListResponseVo<T>> {
   public ListResponseVo() {
   }
 
-  public ListResponseVo( ResponseStatus responseStatus ) {
-    super( responseStatus );
+  public ListResponseVo( HttpCodeAdapter httpCodeAdapter ) {
+    super( httpCodeAdapter );
   }
 
-  public ListResponseVo( ResponseStatus responseStatus, int page, int limit ) {
-    super( responseStatus, page, limit );
+  public ListResponseVo( HttpCodeAdapter httpCodeAdapter, int page, int limit ) {
+    super( httpCodeAdapter, page, limit );
   }
 
-  public ListResponseVo( ResponseStatus responseStatus, int page, int limit, Collection<T> result ) {
-    super( responseStatus, page, limit );
+  public ListResponseVo( HttpCodeAdapter httpCodeAdapter, int page, int limit, Collection<T> result ) {
+    super( httpCodeAdapter, page, limit );
     this.result = result;
   }
 

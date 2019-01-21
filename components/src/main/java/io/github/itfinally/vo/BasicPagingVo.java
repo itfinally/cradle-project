@@ -1,5 +1,7 @@
 package io.github.itfinally.vo;
 
+import io.github.itfinally.http.HttpCodeAdapter;
+
 @SuppressWarnings( "unchecked" )
 public class BasicPagingVo<Vo extends BasicPagingVo<Vo>> extends BasicResponseVo<Vo> {
 
@@ -12,12 +14,12 @@ public class BasicPagingVo<Vo extends BasicPagingVo<Vo>> extends BasicResponseVo
   public BasicPagingVo() {
   }
 
-  public BasicPagingVo( ResponseStatus responseStatus ) {
-    super( responseStatus );
+  public BasicPagingVo( HttpCodeAdapter httpCodeAdapter ) {
+    super( httpCodeAdapter );
   }
 
-  public BasicPagingVo( ResponseStatus responseStatus, int page, int limit ) {
-    super( responseStatus );
+  public BasicPagingVo( HttpCodeAdapter httpCodeAdapter, int page, int limit ) {
+    super( httpCodeAdapter );
     this.page = page;
     this.limit = limit;
   }

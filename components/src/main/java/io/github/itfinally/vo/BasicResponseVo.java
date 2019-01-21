@@ -1,5 +1,7 @@
 package io.github.itfinally.vo;
 
+import io.github.itfinally.http.HttpCodeAdapter;
+
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -15,9 +17,9 @@ public class BasicResponseVo<Vo extends BasicResponseVo<Vo>> implements Serializ
   public BasicResponseVo() {
   }
 
-  public BasicResponseVo( ResponseStatus responseStatus ) {
-    status = responseStatus.getCode();
-    message = responseStatus.getMessage();
+  public BasicResponseVo( HttpCodeAdapter httpCodeAdapter ) {
+    status = httpCodeAdapter.getCode();
+    message = httpCodeAdapter.getMessage();
   }
 
   public int getStatus() {
@@ -64,8 +66,8 @@ public class BasicResponseVo<Vo extends BasicResponseVo<Vo>> implements Serializ
     public Default() {
     }
 
-    public Default( ResponseStatus responseStatus ) {
-      super( responseStatus );
+    public Default( HttpCodeAdapter httpCodeAdapter ) {
+      super( httpCodeAdapter );
     }
   }
 }

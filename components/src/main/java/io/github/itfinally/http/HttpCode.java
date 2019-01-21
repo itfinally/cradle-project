@@ -1,8 +1,9 @@
 package io.github.itfinally.http;
 
-public enum HttpCode {
+public enum HttpCode implements HttpCodeAdapter {
   OK( 200, "请求成功" ),
   UNAUTHORIZED( 401, "未授权" ),
+  TIMEOUT( 408, "请求超时" ),
   SERVER_ERROR( 500, "服务异常" );
 
   private int code;

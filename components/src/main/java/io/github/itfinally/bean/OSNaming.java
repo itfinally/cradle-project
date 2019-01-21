@@ -3,7 +3,7 @@ package io.github.itfinally.bean;
 public enum OSNaming {
   WINDOWS, LINUX, OSX, SOLARIS, UNKNOWN;
 
-  private static OSNaming naming;
+  private volatile static OSNaming naming;
 
   public static OSNaming detection() {
     if ( naming != null ) {

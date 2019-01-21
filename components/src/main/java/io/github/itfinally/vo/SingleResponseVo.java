@@ -1,5 +1,7 @@
 package io.github.itfinally.vo;
 
+import io.github.itfinally.http.HttpCodeAdapter;
+
 import java.util.Objects;
 
 public class SingleResponseVo<T> extends BasicResponseVo<SingleResponseVo<T>> {
@@ -8,12 +10,12 @@ public class SingleResponseVo<T> extends BasicResponseVo<SingleResponseVo<T>> {
   public SingleResponseVo() {
   }
 
-  public SingleResponseVo( ResponseStatus responseStatus ) {
-    super( responseStatus );
+  public SingleResponseVo( HttpCodeAdapter httpCodeAdapter ) {
+    super( httpCodeAdapter );
   }
 
-  public SingleResponseVo( ResponseStatus responseStatus, T result ) {
-    this( responseStatus );
+  public SingleResponseVo( HttpCodeAdapter httpCodeAdapter, T result ) {
+    this( httpCodeAdapter );
     this.result = result;
   }
 
