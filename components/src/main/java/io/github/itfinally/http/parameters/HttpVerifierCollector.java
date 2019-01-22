@@ -3,6 +3,7 @@ package io.github.itfinally.http.parameters;
 import com.google.common.base.Strings;
 import io.github.itfinally.bean.BeanInfoExplorer;
 import io.github.itfinally.bean.DuckCalling;
+import io.github.itfinally.exception.NoSuchMethodRuntimeException;
 import io.github.itfinally.http.parameters.token.MethodMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -196,11 +197,11 @@ public class HttpVerifierCollector implements ApplicationListener<ContextRefresh
     Method verifier = findVerifyMethodInRecursive( verifierClass, call, parameterLength );
 
     if ( null == verifier ) {
-      throw new RuntimeException( new NoSuchMethodException( String.format( "Method '%s' of class '%s' is not found. " +
+      throw new NoSuchMethodRuntimeException( String.format( "Method '%s' of class '%s' is not found. " +
               "try 'VerifyResultPair xxxx( Map<String, String> args )' " +
               "or 'VerifyResultPair xxxx( Map<String, String> args, Map<String, MethodMetadata.ArgMetadata> argMetadata )'",
 
-          call, verifierClass.getName() ) ) );
+          call, verifierClass.getName() ) );
     }
 
     if ( VerifyResultPair.class != verifier.getReturnType() ) {
