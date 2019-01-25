@@ -1,60 +1,100 @@
 package io.github.itfinally.bean;
 
+import com.google.common.base.Joiner;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
+import io.github.itfinally.exception.ExecutionRuntimeException;
 import io.github.itfinally.exception.MethodInvokeRuntimeException;
 import io.github.itfinally.exception.MultiMatchMethodRuntimeException;
 import io.github.itfinally.exception.NoSuchMethodRuntimeException;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.lang.reflect.Modifier;
+import java.nio.charset.Charset;
+import java.util.*;
+import java.util.concurrent.*;
+
+import static java.lang.Runtime.getRuntime;
 
 // Duck model in Java
 public final class DuckCalling {
-  private static final ConcurrentMap<String, List<Method>> methodMappings = new ConcurrentHashMap<>( 32 );
-  private static final ConcurrentMap<Class<?>, List<Method>> classMethods = new ConcurrentHashMap<>( 32 );
+  private static final HashFunction md5Function = Hashing.hmacMd5( DuckCalling.class.getName().getBytes() );
+
+  private static final Cache<Long, Method> methodMappings = CacheBuilder.newBuilder()
+      .concurrencyLevel( getRuntime().availableProcessors() )
+      .expireAfterAccess( 30, TimeUnit.MINUTES )
+      .initialCapacity( 32 )
+      .build();
+
+  private static final Cache<Class<?>, List<Method>> classMethods = CacheBuilder.newBuilder()
+      .concurrencyLevel( getRuntime().availableProcessors() )
+      .expireAfterAccess( 30, TimeUnit.MINUTES )
+      .initialCapacity( 32 )
+      .build();
 
   private DuckCalling() {
   }
 
-  public static <T> T invoke( Object applier, String name, Object... args )
+  public static <T> T invoke( Object applier, final String name, Object... args )
       throws NoSuchMethodRuntimeException, MethodInvokeRuntimeException {
 
-    Class<?> clazz = applier.getClass();
-    String alias = buildAlias( clazz, name, args.length );
+    final Object[] actualArgs = null == args ? new Object[] { null } : args;
 
-    if ( methodMappings.containsKey( alias ) ) {
-      List<Method> methods = methodMappings.get( alias );
-      return invokeMethod( findMatchMethod( clazz, name, args, methods ), applier, args );
+    final Class<?> clazz = applier instanceof Class ? ( Class<?> ) applier : applier.getClass();
+    final long methodHashCode = buildMethodHashCode( clazz, name, actualArgs );
+
+    try {
+      Method method = methodMappings.get( methodHashCode, new Callable<Method>() {
+        @Override
+        public Method call() throws Exception {
+
+          List<Method> methodsTable = classMethods.get( clazz, new Callable<List<Method>>() {
+            @Override
+            public List<Method> call() {
+              return getMethods( clazz, new ArrayList<Method>(), new HashSet<String>() );
+            }
+          } );
+
+          return findMatchMethod( clazz, name, actualArgs, methodsTable );
+        }
+      } );
+
+      return invokeMethod( method, applier, actualArgs );
+
+    } catch ( ExecutionException e ) {
+      throw new ExecutionRuntimeException( e );
     }
-
-    if ( !classMethods.containsKey( clazz ) ) {
-      classMethods.putIfAbsent( clazz, getMethods( clazz, new ArrayList<Method>() ) );
-    }
-
-    Method method = findMatchMethod( clazz, name, args, classMethods.get( clazz ) );
-    if ( !methodMappings.containsKey( alias ) ) {
-      methodMappings.putIfAbsent( alias, new ArrayList<Method>() );
-    }
-
-    methodMappings.get( alias ).add( method );
-    return invokeMethod( method, applier, args );
   }
 
-  private static String buildAlias( Class<?> clazz, String name, int argLength ) {
-    return String.format( "%s.%s.%d", clazz.getName(), name, argLength );
+  private static long buildMethodHashCode( Class<?> clazz, String name, Object[] args ) {
+    List<String> argTypeNames = new ArrayList<>( args.length );
+
+    for ( Object item : args ) {
+      argTypeNames.add( null == item ? "null" : item.getClass().getName() );
+    }
+
+    String originName = String.format( "%s.%s.%s.%d", clazz.getName(), name,
+        Joiner.on( "/" ).join( argTypeNames ), argTypeNames.size() );
+
+    return md5Function.newHasher().putString( originName, Charset.defaultCharset() ).hash().asLong();
   }
 
-  private static List<Method> getMethods( Class<?> clazz, List<Method> methods ) {
+  private static List<Method> getMethods( Class<?> clazz, List<Method> methods, Set<String> filter ) {
     if ( Object.class == clazz ) {
       return methods;
     }
 
-    methods.addAll( Arrays.asList( clazz.getDeclaredMethods() ) );
-    return getMethods( clazz.getSuperclass(), methods );
+    for ( Method method : clazz.getDeclaredMethods() ) {
+      if ( Modifier.isPublic( method.getModifiers() ) && !filter.contains( method.getName() ) ) {
+        filter.add( method.getName() );
+        methods.add( method );
+      }
+    }
+
+    return getMethods( clazz.getSuperclass(), methods, filter );
   }
 
   private static Class<?>[] getParameterTypes( Object[] args ) {
@@ -102,8 +142,15 @@ public final class DuckCalling {
     }
 
     if ( candidateMethod.isEmpty() ) {
-      throw new NoSuchMethodRuntimeException( String.format(
-          "No method '%s' from class '%s'", name, clazz.getName() ) );
+
+      List<String> parametersName = new ArrayList<>();
+
+      for ( Class<?> item : getParameterTypes( args ) ) {
+        parametersName.add( null == item ? "?" : item.getName() );
+      }
+
+      throw new NoSuchMethodRuntimeException( String.format( "No method '%s(%s)' on class '%s'",
+          name, Joiner.on( ", " ).join( parametersName ), clazz.getName() ) );
     }
 
     if ( candidateMethod.size() != 1 ) {
@@ -117,7 +164,8 @@ public final class DuckCalling {
   @SuppressWarnings( "unchecked" )
   private static <T> T invokeMethod( Method method, Object applier, Object[] args ) {
     try {
-      return null == method ? null : ( T ) method.invoke( applier, args );
+      return ( T ) method.invoke( Modifier.isStatic( method.getModifiers() )
+          ? applier.getClass() : applier, args );
 
     } catch ( IllegalAccessException | InvocationTargetException e ) {
       throw new MethodInvokeRuntimeException( e );

@@ -12,11 +12,12 @@ import java.util.List;
 import java.util.concurrent.*;
 
 import static java.lang.Math.abs;
+import static java.lang.Runtime.getRuntime;
 import static java.lang.Thread.currentThread;
 
 public class SafetySimpleDateFormat {
   private static final Cache<String, List<SimpleDateFormat>> datetimeFormats = CacheBuilder.newBuilder()
-      .concurrencyLevel( Runtime.getRuntime().availableProcessors() )
+      .concurrencyLevel( getRuntime().availableProcessors() )
       .initialCapacity( 16 )
       .maximumSize( 10240 )
       .build();
@@ -76,13 +77,20 @@ public class SafetySimpleDateFormat {
   }
 
   private static List<SimpleDateFormat> createFormatter( String format, List<SimpleDateFormat> formats ) {
-    for ( int index = 0, end = Runtime.getRuntime().availableProcessors(); index < end; index += 1 ) {
+    for ( int index = 0, end = getRuntime().availableProcessors(); index < end; index += 1 ) {
       formats.add( new SimpleDateFormat( format ) );
     }
 
     // build virtual hash node
     for ( int size = formats.size(), index = size, end = index * 3; index < end; index += 1 ) {
       formats.add( formats.get( index - size ) );
+    }
+
+    // Avoid even number leads to insufficient hash, the result of ${even number} - 1 must be a odd number
+    // hash format: ${target number} % ( ${even number} - 1 )
+    int size = formats.size();
+    if ( size % 2 != 0 ) {
+      formats.add( formats.get( ThreadLocalRandom.current().nextInt( 0, size - 1 ) ) );
     }
 
     return formats;
